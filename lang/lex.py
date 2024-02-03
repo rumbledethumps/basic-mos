@@ -1,5 +1,5 @@
 import re
-from lang.tokens import Token, Literal
+from lang.tokens import TokenScan, Token, Literal, Word, Ident
 from collections import deque
 
 
@@ -7,6 +7,7 @@ class Re:
     line_number = re.compile("^\s*(\d+)(?:\s|)(.*)", flags=re.ASCII)
     whitespace = re.compile("\s", flags=re.ASCII)
     digit = re.compile("\d", flags=re.ASCII)
+    alphabetic = re.compile("[A-Za-z]", flags=re.ASCII)
 
 
 class BasicLexer:
@@ -18,7 +19,7 @@ class BasicLexer:
     def __iter__(self):
         return self
 
-    def __next__(self):
+    def __next__(self) -> Token:
         try:
             return self.pending.popleft()
         except IndexError:
@@ -38,12 +39,18 @@ class BasicLexer:
         if Re.digit.match(pk):
             return self.number()
 
+        if Re.alphabetic.match(pk):
+            token = self.alphabetic()
+            if token == Token.Word(Word.Rem1):
+                self.remark = True
+            return token
+
         try:
             return self.chars.popleft()
         except IndexError:
             raise StopIteration
 
-    def whitespace(self):
+    def whitespace(self) -> Token:
         length = 0
         while True:
             self.chars.popleft()
@@ -56,7 +63,7 @@ class BasicLexer:
                 pass
             return Token.Whitespace(length)
 
-    def number(self):
+    def number(self) -> Token:
         s = str()
         digits = 0
         decimal = False
@@ -113,6 +120,55 @@ class BasicLexer:
         except:
             pass
         return Token.Literal(Literal.Single(s))
+
+    def alphabetic(self) -> Token:
+        s = str()
+        digit = False
+        while True:
+            try:
+                ch = self.chars.popleft().upper()
+            except IndexError:
+                break
+            s += ch
+            if Re.digit.match(ch):
+                digit = True
+            if ch == "$":
+                self.pending.push(Token.Ident(Ident.String(s)))
+                break
+            if ch == "!":
+                self.pending.push(Token.Ident(Ident.Single(s)))
+                break
+            if ch == "#":
+                self.pending.push(Token.Ident(Ident.Double(s)))
+                break
+            if ch == "%":
+                self.pending.push(Token.Ident(Ident.Integer(s)))
+                break
+            try:
+                pk = self.chars[0]
+                if Re.alphabetic.match(pk):
+                    if digit:
+                        self.pending.push(Token.Ident(Ident.Plain(s)))
+                        break
+                    continue
+                if (
+                    Re.digit.match(pk)
+                    or pk == "$"
+                    or pk == "!"
+                    or pk == "#"
+                    or pk == "%"
+                ):
+                    s = TokenScan.alphabetic(self.pending, s)
+                    if s == "":
+                        break
+                    continue
+            except IndexError:
+                pass
+            s = TokenScan.alphabetic(self.pending, s)
+            if s != "":
+                self.pending.append(Token.Ident(Ident.Plain(s)))
+            break
+        return self.pending.popleft()
 
 
 def parse(source_line: str) -> (int, list[Token]):

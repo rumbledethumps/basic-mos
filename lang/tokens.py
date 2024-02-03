@@ -1,4 +1,5 @@
 from enum import Enum, auto, verify, UNIQUE
+from collections import deque
 
 
 class Word(Enum):
@@ -365,3 +366,70 @@ class Token:
 
         def __str__(self):
             return ";"
+
+
+class TokenScan:
+
+    words = [
+        ("RESTORE", Token.Word(Word.Restore)),
+        ("DEFDBL", Token.Word(Word.Defdbl)),
+        ("DEFINT", Token.Word(Word.Defint)),
+        ("DEFSNG", Token.Word(Word.Defsng)),
+        ("DEFSTR", Token.Word(Word.Defstr)),
+        ("DELETE", Token.Word(Word.Delete)),
+        ("RETURN", Token.Word(Word.Return)),
+        ("CLEAR", Token.Word(Word.Clear)),
+        ("ERASE", Token.Word(Word.Erase)),
+        ("GOSUB", Token.Word(Word.Gosub)),
+        ("INPUT", Token.Word(Word.Input)),
+        ("PRINT", Token.Word(Word.Print)),
+        ("RENUM", Token.Word(Word.Renum)),
+        ("TROFF", Token.Word(Word.Troff)),
+        ("WHILE", Token.Word(Word.While)),
+        ("CONT", Token.Word(Word.Cont)),
+        ("DATA", Token.Word(Word.Data)),
+        ("ELSE", Token.Word(Word.Else)),
+        ("GOTO", Token.Word(Word.Goto)),
+        ("NEXT", Token.Word(Word.Next)),
+        ("LIST", Token.Word(Word.List)),
+        ("LOAD", Token.Word(Word.Load)),
+        ("READ", Token.Word(Word.Read)),
+        ("SAVE", Token.Word(Word.Save)),
+        ("STEP", Token.Word(Word.Step)),
+        ("STOP", Token.Word(Word.Stop)),
+        ("SWAP", Token.Word(Word.Swap)),
+        ("THEN", Token.Word(Word.Then)),
+        ("TRON", Token.Word(Word.Tron)),
+        ("WEND", Token.Word(Word.Wend)),
+        ("AND", Token.Operator(Operator.And)),
+        ("CLS", Token.Word(Word.Cls)),
+        ("DEF", Token.Word(Word.Def)),
+        ("DIM", Token.Word(Word.Dim)),
+        ("END", Token.Word(Word.End)),
+        ("EQV", Token.Operator(Operator.Eqv)),
+        ("FOR", Token.Word(Word.For)),
+        ("IMP", Token.Operator(Operator.Imp)),
+        ("LET", Token.Word(Word.Let)),
+        ("MOD", Token.Operator(Operator.Modulo)),
+        ("NEW", Token.Word(Word.New)),
+        ("NOT", Token.Operator(Operator.Not)),
+        ("REM", Token.Word(Word.Rem1)),
+        ("RUN", Token.Word(Word.Run)),
+        ("XOR", Token.Operator(Operator.Xor)),
+        ("IF", Token.Word(Word.If)),
+        ("ON", Token.Word(Word.On)),
+        ("OR", Token.Operator(Operator.Or)),
+        ("TO", Token.Word(Word.To)),
+    ]
+
+    def alphabetic(v: deque[Token], s: str) -> str:
+        for word, token in TokenScan.words:
+            idx = s.find(word)
+            if idx == 0:
+                v.append(token)
+                s = s[len(word) :]
+            if idx > 0:
+                v.append(Token.Ident(Ident.Plain(s[:idx])))
+                v.append(token)
+                s = s[idx + len(word) :]
+        return s
