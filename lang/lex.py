@@ -45,6 +45,9 @@ class BasicLexer:
                 self.remark = True
             return token
 
+        if pk == '"':
+            return self.string()
+
         try:
             return self.chars.popleft()
         except IndexError:
@@ -133,22 +136,22 @@ class BasicLexer:
             if Re.digit.match(ch):
                 digit = True
             if ch == "$":
-                self.pending.push(Token.Ident(Ident.String(s)))
+                self.pending.append(Token.Ident(Ident.String(s)))
                 break
             if ch == "!":
-                self.pending.push(Token.Ident(Ident.Single(s)))
+                self.pending.append(Token.Ident(Ident.Single(s)))
                 break
             if ch == "#":
-                self.pending.push(Token.Ident(Ident.Double(s)))
+                self.pending.append(Token.Ident(Ident.Double(s)))
                 break
             if ch == "%":
-                self.pending.push(Token.Ident(Ident.Integer(s)))
+                self.pending.append(Token.Ident(Ident.Integer(s)))
                 break
             try:
                 pk = self.chars[0]
                 if Re.alphabetic.match(pk):
                     if digit:
-                        self.pending.push(Token.Ident(Ident.Plain(s)))
+                        self.pending.append(Token.Ident(Ident.Plain(s)))
                         break
                     continue
                 if (
@@ -169,6 +172,19 @@ class BasicLexer:
                 self.pending.append(Token.Ident(Ident.Plain(s)))
             break
         return self.pending.popleft()
+
+    def string(self):
+        s = str()
+        self.chars.popleft()
+        while True:
+            try:
+                ch = self.chars.popleft()
+                if ch == '"':
+                    break
+            except IndexError:
+                break
+            s += ch
+        return Token.Literal(Literal.String(s))
 
 
 def parse(source_line: str) -> (int, list[Token]):

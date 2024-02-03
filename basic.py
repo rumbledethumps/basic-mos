@@ -8,3 +8,7 @@ print(line.number, line.tokens)
 line = Line(*parse("fori=1to99"))
 print(line)
 print(line.number, line.tokens)
+
+line = Line(*parse('A$="Foo"'))
+print(line)
+print(line.number, line.tokens)
