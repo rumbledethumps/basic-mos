@@ -1,4 +1,4 @@
-import lex  # The code to test
+import lang.lex  # The code to test
 import unittest  # The test framework
 
 

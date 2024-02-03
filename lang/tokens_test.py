@@ -1,4 +1,4 @@
-from tokens import Token, Word, Operator, Ident, Literal
+from lang.tokens import Token, Word, Operator, Ident, Literal
 import unittest  # The test framework
 
 

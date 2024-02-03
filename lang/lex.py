@@ -1,5 +1,5 @@
 import re
-from tokens import Token
+from lang.tokens import Token
 from collections import deque
 
 

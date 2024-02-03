@@ -1,4 +1,4 @@
-from tokens import Token
+from lang.tokens import Token
 
 
 class Line:

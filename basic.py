@@ -1,10 +1,10 @@
-import lex
-from line import Line
+from lang.lex import parse
+from lang.line import Line
 
-line = Line(*lex.parse("10 leti= 99"))
+line = Line(*parse("10 leti= 99"))
 print(line)
 print(line.number, line.tokens)
 
-line = Line(*lex.parse("fori=1to99"))
+line = Line(*parse("fori=1to99"))
 print(line)
 print(line.number, line.tokens)
