@@ -84,23 +84,35 @@ class Literal:
             return self.text
 
     class Single(Base):
-        pass
+        def __repr__(self):
+            return f"Literal.Single({repr(self.text)})"
 
     class Double(Base):
-        pass
+        def __repr__(self):
+            return f"Literal.Double({repr(self.text)})"
 
     class Integer(Base):
-        pass
+        def __repr__(self):
+            return f"Literal.Integer({repr(self.text)})"
 
     class Hex(Base):
+        def __repr__(self):
+            return f"Literal.Hex({repr(self.text)})"
+
         def __str__(self):
             return f"&H{self.text}"
 
     class Octal(Base):
+        def __repr__(self):
+            return f"Literal.Octal({repr(self.text)})"
+
         def __str__(self):
             return f"&{self.text}"
 
     class String(Base):
+        def __repr__(self):
+            return f"Literal.String({repr(self.text)})"
+
         def __str__(self):
             return f'"{self.text}"'
 
@@ -119,19 +131,24 @@ class Ident:
             return self.text
 
     class Plain(Base):
-        pass
+        def __repr__(self):
+            return f"Ident.Plain({repr(self.text)})"
 
     class String(Base):
-        pass
+        def __repr__(self):
+            return f"Ident.String({repr(self.text)})"
 
     class Single(Base):
-        pass
+        def __repr__(self):
+            return f"Ident.Single({repr(self.text)})"
 
     class Double(Base):
-        pass
+        def __repr__(self):
+            return f"Ident.Double({repr(self.text)})"
 
     class Integer(Base):
-        pass
+        def __repr__(self):
+            return f"Ident.Integer({repr(self.text)})"
 
 
 class Token:
@@ -157,6 +174,9 @@ class Token:
                 return False
             return self.length == other.length
 
+        def __repr__(self):
+            return f"Token.Whitespace({repr(self.length)})"
+
         def __str__(self):
             return self.length * " "
 
@@ -168,6 +188,9 @@ class Token:
             if not isinstance(other, type(self)):
                 return False
             return self.literal == other.literal
+
+        def __repr__(self):
+            return f"Token.Literal({repr(self.literal)})"
 
         def __str__(self):
             return str(self.literal)
@@ -181,6 +204,9 @@ class Token:
                 return False
             return self.ident == other.ident
 
+        def __repr__(self):
+            return f"Token.Ident({repr(self.ident)})"
+
         def __str__(self):
             return str(self.ident)
 
@@ -192,6 +218,9 @@ class Token:
             if not isinstance(other, type(self)):
                 return False
             return self.word == other.word
+
+        def __repr__(self):
+            return f"Token.Word({self.word})"
 
         def __str__(self):
             match self.word:
@@ -291,6 +320,9 @@ class Token:
                 return False
             return self.operator == other.operator
 
+        def __repr__(self):
+            return f"Token.Operator({self.operator})"
+
         def __str__(self):
             match self.operator:
                 case Operator.Caret:
@@ -336,12 +368,18 @@ class Token:
         def __eq__(self, other):
             return isinstance(other, type(self))
 
+        def __repr__(self):
+            return f"Token.LParen()"
+
         def __str__(self):
             return "("
 
     class RParen(Base):
         def __eq__(self, other):
             return isinstance(other, type(self))
+
+        def __repr__(self):
+            return f"Token.RParen()"
 
         def __str__(self):
             return ")"
@@ -350,6 +388,9 @@ class Token:
         def __eq__(self, other):
             return isinstance(other, type(self))
 
+        def __repr__(self):
+            return f"Token.Comma()"
+
         def __str__(self):
             return ","
 
@@ -357,12 +398,18 @@ class Token:
         def __eq__(self, other):
             return isinstance(other, type(self))
 
+        def __repr__(self):
+            return f"Token.Colon()"
+
         def __str__(self):
             return ":"
 
     class Semicolon(Base):
         def __eq__(self, other):
             return isinstance(other, type(self))
+
+        def __repr__(self):
+            return f"Token.Semicolon()"
 
         def __str__(self):
             return ";"
