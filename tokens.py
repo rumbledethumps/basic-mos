@@ -1,7 +1,6 @@
 from enum import Enum, auto, verify, UNIQUE
 
 
-@verify(UNIQUE)
 class Word(Enum):
     Clear = auto()
     Cls = auto()
@@ -48,7 +47,6 @@ class Word(Enum):
     While = auto()
 
 
-@verify(UNIQUE)
 class Operator(Enum):
     Caret = auto()
     Multiply = auto()
@@ -71,16 +69,126 @@ class Operator(Enum):
     Eqv = auto()
 
 
+class Literal:
+    class Base:
+        def __init__(self, text: str):
+            self.text = text
+
+        def __eq__(self, other):
+            if not isinstance(other, type(self)):
+                return False
+            return self.text == other.text
+
+        def __str__(self):
+            return self.text
+
+    class Single(Base):
+        pass
+
+    class Double(Base):
+        pass
+
+    class Integer(Base):
+        pass
+
+    class Hex(Base):
+        def __str__(self):
+            return f"&H{self.text}"
+
+    class Octal(Base):
+        def __str__(self):
+            return f"&{self.text}"
+
+    class String(Base):
+        def __str__(self):
+            return f'"{self.text}"'
+
+
+class Ident:
+    class Base:
+        def __init__(self, text: str):
+            self.text = text
+
+        def __eq__(self, other):
+            if not isinstance(other, type(self)):
+                return False
+            return self.text == other.text
+
+        def __str__(self):
+            return self.text
+
+    class Plain(Base):
+        pass
+
+    class String(Base):
+        pass
+
+    class Single(Base):
+        pass
+
+    class Double(Base):
+        pass
+
+    class Integer(Base):
+        pass
+
+
 class Token:
     class Base:
         pass
+
+    class Unknown(Base):
+        def __init__(self, text: str):
+            self.text = text
+
+        def __eq__(self, other):
+            return False
+
+        def __str__(self):
+            return self.text
+
+    class Whitespace(Base):
+        def __init__(self, length: int):
+            self.length = length
+
+        def __eq__(self, other):
+            if not isinstance(other, type(self)):
+                return False
+            return self.length == other.length
+
+        def __str__(self):
+            return self.length * " "
+
+    class Literal(Base):
+        def __init__(self, literal: Literal):
+            self.literal = literal
+
+        def __eq__(self, other):
+            if not isinstance(other, type(self)):
+                return False
+            return self.literal == other.literal
+
+        def __str__(self):
+            return str(self.literal)
+
+    class Ident(Base):
+        def __init__(self, ident: Ident):
+            self.ident = ident
+
+        def __eq__(self, other):
+            if not isinstance(other, type(self)):
+                return False
+            return self.ident == other.ident
+
+        def __str__(self):
+            return str(self.ident)
 
     class Word(Base):
         def __init__(self, word: Word):
             self.word = word
 
         def __eq__(self, other):
-            if not isinstance(other, Token.Word):
+            if not isinstance(other, type(self)):
                 return False
             return self.word == other.word
 
@@ -178,7 +286,7 @@ class Token:
             self.operator = operator
 
         def __eq__(self, other):
-            if not isinstance(other, Token.Operator):
+            if not isinstance(other, type(self)):
                 return False
             return self.operator == other.operator
 
@@ -225,35 +333,35 @@ class Token:
 
     class LParen(Base):
         def __eq__(self, other):
-            return isinstance(other, Token.LParen)
+            return isinstance(other, type(self))
 
         def __str__(self):
             return "("
 
     class RParen(Base):
         def __eq__(self, other):
-            return isinstance(other, Token.RParen)
+            return isinstance(other, type(self))
 
         def __str__(self):
             return ")"
 
     class Comma(Base):
         def __eq__(self, other):
-            return isinstance(other, Token.Comma)
+            return isinstance(other, type(self))
 
         def __str__(self):
             return ","
 
     class Colon(Base):
         def __eq__(self, other):
-            return isinstance(other, Token.Colon)
+            return isinstance(other, type(self))
 
         def __str__(self):
             return ":"
 
     class Semicolon(Base):
         def __eq__(self, other):
-            return isinstance(other, Token.Semicolon)
+            return isinstance(other, type(self))
 
         def __str__(self):
             return ";"
