@@ -7,6 +7,8 @@ class Re:
     line_number = re.compile("^\s*(\d+)(?:\s|)(.*)", flags=re.ASCII)
     whitespace = re.compile("\s", flags=re.ASCII)
     digit = re.compile("\d", flags=re.ASCII)
+    octal = re.compile("[0-7]", flags=re.ASCII)
+    hex = re.compile("[0-9A-Fa-f]", flags=re.ASCII)
     alphabetic = re.compile("[A-Za-z]", flags=re.ASCII)
 
 
@@ -47,6 +49,9 @@ class BasicLexer:
 
         if pk == '"':
             return self.string()
+
+        if pk == "&":
+            return self.radix()
 
         try:
             return self.chars.popleft()
@@ -97,9 +102,9 @@ class BasicLexer:
                 pk = self.chars[0]
             except IndexError:
                 continue
-            if ch == "E" or ch == "D":
+            if ch in ["E", "D"]:
                 exp = True
-                if pk == "+" or pk == "-":
+                if pk in ["+", "-"]:
                     continue
                 if not Re.digit.match(pk):
                     exp = False
@@ -109,9 +114,9 @@ class BasicLexer:
                 continue
             if not exp and not decimal and pk == ".":
                 continue
-            if not exp and (pk == "E" or pk == "e" or pk == "D" or pk == "d"):
+            if not exp and pk in ["E", "e", "D", "d"]:
                 continue
-            if pk == "!" or pk == "#" or pk == "%":
+            if pk in ["!", "#", "%"]:
                 continue
             break
         if digits > 7:
@@ -154,13 +159,7 @@ class BasicLexer:
                         self.pending.append(Token.Ident(Ident.Plain(s)))
                         break
                     continue
-                if (
-                    Re.digit.match(pk)
-                    or pk == "$"
-                    or pk == "!"
-                    or pk == "#"
-                    or pk == "%"
-                ):
+                if Re.digit.match(pk) or pk in ["$", "!", "#", "%"]:
                     s = TokenScan.alphabetic(self.pending, s)
                     if s == "":
                         break
@@ -173,7 +172,7 @@ class BasicLexer:
             break
         return self.pending.popleft()
 
-    def string(self):
+    def string(self) -> Token:
         s = str()
         self.chars.popleft()
         while True:
@@ -185,6 +184,31 @@ class BasicLexer:
                 break
             s += ch
         return Token.Literal(Literal.String(s))
+
+    def radix(self) -> Token:
+        self.chars.popleft()
+        try:
+            is_hex = False
+            if self.chars[0] in ["h", "H"]:
+                self.chars.popleft()
+                is_hex = True
+        except IndexError:
+            pass
+        s = str()
+        while True:
+            try:
+                ch = self.chars.popleft()
+            except IndexError:
+                break
+            if Re.octal.match(ch) or (is_hex and Re.hex.match(ch)):
+                s += ch.upper()
+            else:
+                self.chars.appendleft(ch)
+                break
+        if is_hex:
+            return Token.Literal(Literal.Hex(s))
+        else:
+            return Token.Literal(Literal.Octal(s))
 
 
 def parse(source_line: str) -> (int, list[Token]):
