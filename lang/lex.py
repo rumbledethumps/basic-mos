@@ -10,6 +10,7 @@ class Re:
     octal = re.compile("[0-7]", flags=re.ASCII)
     hex = re.compile("[0-9A-Fa-f]", flags=re.ASCII)
     alphabetic = re.compile("[A-Za-z]", flags=re.ASCII)
+    not_minutia = re.compile("(?:[A-Za-z]|\s|\d)", flags=re.ASCII)
 
 
 class BasicLexer:
@@ -26,37 +27,31 @@ class BasicLexer:
             return self.pending.popleft()
         except IndexError:
             pass
-
         if self.remark:
             return Token.Unknown(str(self.chars))
-
         try:
             pk = self.chars[0]
         except IndexError:
             pk = ""
-
         if Re.whitespace.match(pk):
             return self.whitespace()
-
         if Re.digit.match(pk):
             return self.number()
-
         if Re.alphabetic.match(pk):
             token = self.alphabetic()
             if token == Token.Word(Word.Rem1):
                 self.remark = True
             return token
-
         if pk == '"':
             return self.string()
-
         if pk == "&":
             return self.radix()
-
-        try:
-            return self.chars.popleft()
-        except IndexError:
+        minutia = self.minutia()
+        if minutia == Token.Word(Word.Rem2):
+            self.remark = True
+        if minutia == Token.Unknown(""):
             raise StopIteration
+        return minutia
 
     def whitespace(self) -> Token:
         length = 0
@@ -209,6 +204,26 @@ class BasicLexer:
             return Token.Literal(Literal.Hex(s))
         else:
             return Token.Literal(Literal.Octal(s))
+
+    def minutia(self) -> Token:
+        s = str()
+        while True:
+            try:
+                ch = self.chars.popleft()
+            except IndexError:
+                break
+            s += ch
+            try:
+                return TokenScan.match_minutia(s)
+            except KeyError:
+                pass
+            try:
+                pk = self.chars[0]
+            except IndexError:
+                break
+            if Re.not_minutia.match(pk):
+                break
+        return Token.Unknown(s)
 
 
 def parse(source_line: str) -> (int, list[Token]):

@@ -160,7 +160,9 @@ class Token:
             self.text = text
 
         def __eq__(self, other):
-            return False
+            if not isinstance(other, type(self)):
+                return False
+            return self.text == other.text
 
         def __str__(self):
             return self.text
@@ -480,3 +482,25 @@ class TokenScan:
                 v.append(token)
                 s = s[idx + len(word) :]
         return s
+
+    minutia = {
+        "(": Token.LParen,
+        ")": Token.RParen,
+        ",": Token.Comma,
+        ":": Token.Colon,
+        ";": Token.Semicolon,
+        "?": Token.Word(Word.Print),
+        "'": Token.Word(Word.Rem2),
+        "^": Token.Operator(Operator.Caret),
+        "*": Token.Operator(Operator.Multiply),
+        "/": Token.Operator(Operator.Divide),
+        "\\": Token.Operator(Operator.DivideInt),
+        "+": Token.Operator(Operator.Plus),
+        "-": Token.Operator(Operator.Minus),
+        "=": Token.Operator(Operator.Equal),
+        "<": Token.Operator(Operator.Less),
+        ">": Token.Operator(Operator.Greater),
+    }
+
+    def match_minutia(s: str) -> Token:
+        return TokenScan.minutia[s]
