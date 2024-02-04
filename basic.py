@@ -9,7 +9,7 @@ line = Line(*parse('A$="Foo"'))
 print(line)
 print(line.number, line.tokens)
 
-line = Line(*parse("A%=&hff00"))
+line = Line(*parse("ifA%> =&hff00go sub 10"))
 print(line)
 print(line.number, line.tokens)
 

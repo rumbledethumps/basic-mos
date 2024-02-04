@@ -1,5 +1,5 @@
 import re
-from lang.tokens import TokenScan, Token, Literal, Word, Ident
+from lang.tokens import TokenScan, Token, Literal, Word, Ident, Operator
 from collections import deque
 
 
@@ -260,11 +260,56 @@ def trim_end(tokens: list[Token]):
 
 
 def collapse_triples(tokens: list[Token]):
-    pass
+    locs = list()
+    for i in range(len(tokens) - 2):
+        w0, w1, w2 = tokens[i : i + 3]
+        if w0 == Token.Operator(Operator.Less):
+            if type(w1) == Token.Whitespace:
+                if w2 == Token.Operator(Operator.Greater):
+                    locs.append((i, Token.Operator(Operator.NotEqual)))
+                if w2 == Token.Operator(Operator.Equal):
+                    locs.append((i, Token.Operator(Operator.LessEqual)))
+        if w0 == Token.Operator(Operator.Equal):
+            if type(w1) == Token.Whitespace:
+                if w2 == Token.Operator(Operator.Greater):
+                    locs.append((i, Token.Operator(Operator.GreaterEqual)))
+                if w2 == Token.Operator(Operator.Less):
+                    locs.append((i, Token.Operator(Operator.LessEqual)))
+        if w0 == Token.Operator(Operator.Greater):
+            if type(w1) == Token.Whitespace:
+                if w2 == Token.Operator(Operator.Less):
+                    locs.append((i, Token.Operator(Operator.NotEqual)))
+                if w2 == Token.Operator(Operator.Equal):
+                    locs.append((i, Token.Operator(Operator.GreaterEqual)))
+        if str(w0) == "GO":
+            if type(w1) == Token.Whitespace:
+                if w2 == Token.Word(Word.To):
+                    locs.append((i, Token.Word(Word.Goto)))
+                if str(w2) == "SUB":
+                    locs.append((i, Token.Word(Word.Gosub)))
+    for index, token in reversed(locs):
+        tokens[index : index + 3] = [token]
 
 
 def collapse_doubles(tokens: list[Token]):
-    pass
+    locs = list()
+    for i in range(len(tokens) - 1):
+        w0, w1 = tokens[i : i + 2]
+        if w0 == Token.Operator(Operator.Equal):
+            if w1 == Token.Operator(Operator.Greater):
+                locs.append((i, Token.Operator(Operator.GreaterEqual)))
+            if w1 == Token.Operator(Operator.Less):
+                locs.append((i, Token.Operator(Operator.LessEqual)))
+        if w1 == Token.Operator(Operator.Equal):
+            if w0 == Token.Operator(Operator.Greater):
+                locs.append((i, Token.Operator(Operator.GreaterEqual)))
+            if w0 == Token.Operator(Operator.Less):
+                locs.append((i, Token.Operator(Operator.LessEqual)))
+        if w0 == Token.Operator(Operator.Less):
+            if w1 == Token.Operator(Operator.Greater):
+                locs.append((i, Token.Operator(Operator.NotEqual)))
+    for index, token in reversed(locs):
+        tokens[index : index + 2] = [token]
 
 
 def separate_words(tokens: list[Token]):
@@ -273,5 +318,5 @@ def separate_words(tokens: list[Token]):
         window = tokens[i : i + 2]
         if window[0].is_word() and window[1].is_word():
             locs.append(i)
-    for loc in locs:
+    for loc in reversed(locs):
         tokens.insert(loc + 1, Token.Whitespace(1))
