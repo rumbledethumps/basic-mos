@@ -244,7 +244,7 @@ def parse(source_line: str) -> (int, list[Token]):
 
 
 def trim_end(tokens: list[Token]):
-    # try normal spaces first
+    # try code spaces first
     try:
         if type(tokens[-1]) == Token.Whitespace:
             tokens.pop()
@@ -253,7 +253,7 @@ def trim_end(tokens: list[Token]):
     # get spaces in rems too
     try:
         if type(tokens[-1]) == Token.Unknown:
-            s = tokens.pop().text.rstrip()
+            s = str(tokens.pop()).rstrip()
             tokens.append(Token.Unknown(s))
     except IndexError:
         pass
@@ -268,4 +268,10 @@ def collapse_doubles(tokens: list[Token]):
 
 
 def separate_words(tokens: list[Token]):
-    pass
+    locs = list()
+    for i in range(len(tokens) - 1):
+        window = tokens[i : i + 2]
+        if window[0].is_word() and window[1].is_word():
+            locs.append(i)
+    for loc in locs:
+        tokens.insert(loc + 1, Token.Whitespace(1))

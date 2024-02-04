@@ -153,7 +153,8 @@ class Ident:
 
 class Token:
     class Base:
-        pass
+        def is_word(self):
+            return False
 
     class Unknown(Base):
         def __init__(self, text: str):
@@ -200,6 +201,9 @@ class Token:
         def __str__(self):
             return str(self.literal)
 
+        def is_word(self):
+            return True
+
     class Ident(Base):
         def __init__(self, ident: Ident):
             self.ident = ident
@@ -214,6 +218,9 @@ class Token:
 
         def __str__(self):
             return str(self.ident)
+
+        def is_word(self):
+            return True
 
     class Word(Base):
         def __init__(self, word: Word):
@@ -316,6 +323,9 @@ class Token:
                 case Word.While:
                     return "WHILE"
 
+        def is_word(self):
+            return True
+
     class Operator(Base):
         def __init__(self, operator: Operator):
             self.operator = operator
@@ -368,6 +378,17 @@ class Token:
                     return "IMP"
                 case Operator.Eqv:
                     return "EQV"
+
+        def is_word(self):
+            return (
+                self.operator == Operator.Modulo
+                or self.operator == Operator.Not
+                or self.operator == Operator.And
+                or self.operator == Operator.Or
+                or self.operator == Operator.Xor
+                or self.operator == Operator.Imp
+                or self.operator == Operator.Eqv
+            )
 
     class LParen(Base):
         def __eq__(self, other):
