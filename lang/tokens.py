@@ -164,6 +164,9 @@ class Token:
                 return False
             return self.text == other.text
 
+        def __repr__(self):
+            return f"Token.Unknown({repr(self.text)})"
+
         def __str__(self):
             return self.text
 

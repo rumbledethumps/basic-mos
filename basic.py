@@ -13,6 +13,6 @@ line = Line(*parse("A%=&hff00"))
 print(line)
 print(line.number, line.tokens)
 
-line = Line(*parse("A%=&z"))
+line = Line(*parse("A%=&z ' Comment  "))
 print(line)
 print(line.number, line.tokens)

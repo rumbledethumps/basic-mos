@@ -4,13 +4,13 @@ from collections import deque
 
 
 class Re:
-    line_number = re.compile("^\s*(\d+)(?:\s|)(.*)", flags=re.ASCII)
-    whitespace = re.compile("\s", flags=re.ASCII)
-    digit = re.compile("\d", flags=re.ASCII)
+    line_number = re.compile("^\\s*(\\d+)(?:\\s|)(.*)", flags=re.ASCII)
+    whitespace = re.compile("\\s", flags=re.ASCII)
+    digit = re.compile("\\d", flags=re.ASCII)
     octal = re.compile("[0-7]", flags=re.ASCII)
     hex = re.compile("[0-9A-Fa-f]", flags=re.ASCII)
     alphabetic = re.compile("[A-Za-z]", flags=re.ASCII)
-    not_minutia = re.compile("(?:[A-Za-z]|\s|\d)", flags=re.ASCII)
+    not_minutia = re.compile("(?:[A-Za-z]|\\s|\\d)", flags=re.ASCII)
 
 
 class BasicLexer:
@@ -28,7 +28,11 @@ class BasicLexer:
         except IndexError:
             pass
         if self.remark:
-            return Token.Unknown(str(self.chars))
+            token = Token.Unknown("".join(self.chars))
+            self.chars = ""
+            if token == Token.Unknown(""):
+                raise StopIteration
+            return token
         try:
             pk = self.chars[0]
         except IndexError:
@@ -58,7 +62,6 @@ class BasicLexer:
         while True:
             self.chars.popleft()
             length += 1
-
             try:
                 if Re.whitespace.match(self.chars[0]):
                     continue
@@ -232,4 +235,37 @@ def parse(source_line: str) -> (int, list[Token]):
     if result:
         line_number = int(result.group(1))
         source_line = result.group(2)
-    return (line_number, list(BasicLexer(source_line)))
+    tokens = list(BasicLexer(source_line))
+    trim_end(tokens)
+    collapse_triples(tokens)
+    collapse_doubles(tokens)
+    separate_words(tokens)
+    return (line_number, tokens)
+
+
+def trim_end(tokens: list[Token]):
+    # try normal spaces first
+    try:
+        if type(tokens[-1]) == Token.Whitespace:
+            tokens.pop()
+    except IndexError:
+        pass
+    # get spaces in rems too
+    try:
+        if type(tokens[-1]) == Token.Unknown:
+            s = tokens.pop().text.rstrip()
+            tokens.append(Token.Unknown(s))
+    except IndexError:
+        pass
+
+
+def collapse_triples(tokens: list[Token]):
+    pass
+
+
+def collapse_doubles(tokens: list[Token]):
+    pass
+
+
+def separate_words(tokens: list[Token]):
+    pass
