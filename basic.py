@@ -1,18 +1,18 @@
-from lang.lex import parse
+from lang.lex import lex
 from lang.line import Line
 
-line = Line(*parse("10 leti= 99"))
+line = Line(*lex("10 leti= 99"))
 print(line)
 print(line.number, line.tokens)
 
-line = Line(*parse('A$="Foo"'))
+line = Line(*lex('A$="Foo"'))
 print(line)
 print(line.number, line.tokens)
 
-line = Line(*parse("ifA%> =&hff00go sub 10"))
+line = Line(*lex("ifA%> =&hff00go sub 10"))
 print(line)
 print(line.number, line.tokens)
 
-line = Line(*parse("A%=&z ' Comment  "))
+line = Line(*lex("A%=&z ' Comment  "))
 print(line)
 print(line.number, line.tokens)

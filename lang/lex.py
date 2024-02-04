@@ -229,21 +229,21 @@ class BasicLexer:
         return Token.Unknown(s)
 
 
-def parse(source_line: str) -> (int, list[Token]):
+def lex(source_line: str) -> (int, list[Token]):
     line_number = None
     result = Re.line_number.match(source_line)
     if result:
         line_number = int(result.group(1))
         source_line = result.group(2)
     tokens = list(BasicLexer(source_line))
-    trim_end(tokens)
-    collapse_triples(tokens)
-    collapse_doubles(tokens)
-    separate_words(tokens)
+    _trim_end(tokens)
+    _collapse_triples(tokens)
+    _collapse_doubles(tokens)
+    _separate_words(tokens)
     return (line_number, tokens)
 
 
-def trim_end(tokens: list[Token]):
+def _trim_end(tokens: list[Token]):
     # try code spaces first
     try:
         if type(tokens[-1]) == Token.Whitespace:
@@ -259,7 +259,7 @@ def trim_end(tokens: list[Token]):
         pass
 
 
-def collapse_triples(tokens: list[Token]):
+def _collapse_triples(tokens: list[Token]):
     locs = list()
     for i in range(len(tokens) - 2):
         w0, w1, w2 = tokens[i : i + 3]
@@ -291,7 +291,7 @@ def collapse_triples(tokens: list[Token]):
         tokens[index : index + 3] = [token]
 
 
-def collapse_doubles(tokens: list[Token]):
+def _collapse_doubles(tokens: list[Token]):
     locs = list()
     for i in range(len(tokens) - 1):
         w0, w1 = tokens[i : i + 2]
@@ -312,7 +312,7 @@ def collapse_doubles(tokens: list[Token]):
         tokens[index : index + 2] = [token]
 
 
-def separate_words(tokens: list[Token]):
+def _separate_words(tokens: list[Token]):
     locs = list()
     for i in range(len(tokens) - 1):
         window = tokens[i : i + 2]
