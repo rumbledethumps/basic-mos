@@ -43,6 +43,15 @@ class Variable:
             self.ident = ident
             self.list_expr = list_expr
 
+    # Accept visitors
+
+    def accept(self, visitor):
+        match self:
+            case Variable.Array(_, _, list_expr):
+                for expr in list_expr:
+                    expr.accept(visitor)
+        visitor.visit_variable(self)
+
 
 class Expression:
     class Base:
@@ -156,6 +165,38 @@ class Expression:
 
     class Eqv(_ColExprExpr):
         pass
+
+    # Accept visitors
+
+    def accept(self, visitor):
+        match self:
+            case Expression.Variable(var):
+                var.accept(visitor)
+            case Expression.Negation(_, expr) | Expression.Not(_, expr):
+                expr.accept(visitor)
+            case (
+                Expression.Power(_, expr0, expr1)
+                | Expression.Multiply(_, expr0, expr1)
+                | Expression.Divide(_, expr0, expr1)
+                | Expression.DivideInt(_, expr0, expr1)
+                | Expression.Modulo(_, expr0, expr1)
+                | Expression.Add(_, expr0, expr1)
+                | Expression.Subtract(_, expr0, expr1)
+                | Expression.Equal(_, expr0, expr1)
+                | Expression.NotEqual(_, expr0, expr1)
+                | Expression.Less(_, expr0, expr1)
+                | Expression.LessEqual(_, expr0, expr1)
+                | Expression.Greater(_, expr0, expr1)
+                | Expression.GreaterEqual(_, expr0, expr1)
+                | Expression.And(_, expr0, expr1)
+                | Expression.Or(_, expr0, expr1)
+                | Expression.Xor(_, expr0, expr1)
+                | Expression.Imp(_, expr0, expr1)
+                | Expression.Eqv(_, expr0, expr1)
+            ):
+                expr0.accept(visitor)
+                expr1.accept(visitor)
+        visitor.visit_expression(self)
 
 
 class Statement:
@@ -421,3 +462,55 @@ class Statement:
             ):
                 var0.accept(visitor)
                 var1.accept(visitor)
+            case Statement.Mid(_, var, expr0, expr1, expr2) | Statement.For(
+                _, var, expr0, expr1, expr2
+            ):
+                var.accept(visitor)
+                expr0.accept(visitor)
+                expr1.accept(visitor)
+                expr2.accept(visitor)
+            case (
+                Statement.Gosub(_, expr)
+                | Statement.Goto(_, expr)
+                | Statement.Load(_, expr)
+                | Statement.Restore(_, expr)
+                | Statement.Run(_, expr)
+                | Statement.Save(_, expr)
+                | Statement.While(_, expr)
+            ):
+                expr.accept(visitor)
+            case Statement.If(_, expr, list_statement0, list_statement1):
+                expr.accept(visitor)
+                for statement in list_statement0:
+                    statement.accept(visitor)
+                for statement in list_statement1:
+                    statement.accept(visitor)
+            case Statement.Let(_, var, expr):
+                var.accept(visitor)
+                expr.accept(visitor)
+            case Statement.Delete(_, expr0, expr1) | Statement.List(_, expr0, expr1):
+                expr0.accept(visitor)
+                expr1.accept(visitor)
+            case Statement.Input(_, expr0, expr1, list_var):
+                expr0.accept(visitor)
+                expr1.accept(visitor)
+                for var in list_var:
+                    var.accept(visitor)
+            case Statement.OnGoto(_, expr, list_expr):
+                expr.accept(visitor)
+                for expr in list_expr:
+                    expr.accept(visitor)
+            case Statement.Renum(_, var, expr0, expr1, expr2):
+                var.accept(visitor)
+                expr0.accept(visitor)
+                expr1.accept(visitor)
+                expr2.accept(visitor)
+            case (
+                Statement.Dim(_, list_var)
+                | Statement.Erase(_, list_var)
+                | Statement.Next(_, list_var)
+                | Statement.Read(_, list_var)
+            ):
+                for var in list_var:
+                    var.accept(visitor)
+        visitor.visit_statement(self)
