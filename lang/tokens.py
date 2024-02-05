@@ -1,4 +1,4 @@
-from enum import Enum, auto, verify, UNIQUE
+from enum import Enum, auto
 from collections import deque
 
 
