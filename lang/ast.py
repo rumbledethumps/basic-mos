@@ -144,6 +144,9 @@ class Expression:
                 return False
             return self.text == other.text
 
+        def __repr__(self):
+            return f"Expression.String({repr(self.col)}, {repr(self.text)})"
+
     class _ColExpr(Base):
         __match_args__ = ("col", "expr")
 

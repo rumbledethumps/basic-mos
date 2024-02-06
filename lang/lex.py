@@ -1,5 +1,6 @@
 import re
 from lang.tokens import TokenScan, Token, Literal, Word, Ident, Operator
+import lang.line
 from collections import deque
 
 
@@ -234,7 +235,10 @@ def lex(source_line: str) -> (int, list[Token]):
     result = Re.line_number.match(source_line)
     if result:
         potential_line_number = int(result.group(1))
-        if potential_line_number >= 0 and potential_line_number <= 32767:
+        if (
+            potential_line_number >= 0
+            and potential_line_number <= lang.line.Line.max_number
+        ):
             line_number = potential_line_number
             source_line = result.group(2)
     tokens = list(BasicLexer(source_line))

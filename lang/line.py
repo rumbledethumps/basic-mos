@@ -4,6 +4,8 @@ from lang.parse import parse
 
 
 class Line:
+    max_number = 65529
+
     def __init__(self, number: int | None, tokens: list[Token]):
         self.number = number
         self.tokens = tokens
