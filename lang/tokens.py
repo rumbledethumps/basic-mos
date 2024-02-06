@@ -205,19 +205,21 @@ class Token:
             return True
 
     class Ident(Base):
+        __match_args__ = ("id", None)
+
         def __init__(self, ident: Ident):
-            self.ident = ident
+            self.id = ident
 
         def __eq__(self, other):
             if not isinstance(other, type(self)):
                 return False
-            return self.ident == other.ident
+            return self.id == other.id
 
         def __repr__(self):
-            return f"Token.Ident({repr(self.ident)})"
+            return f"Token.Ident({repr(self.id)})"
 
         def __str__(self):
-            return str(self.ident)
+            return str(self.id)
 
         def is_word(self):
             return True

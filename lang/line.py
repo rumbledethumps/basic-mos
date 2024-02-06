@@ -1,5 +1,6 @@
 from lang.tokens import Token
 from lang.ast import Statement
+from lang.parse import parse
 
 
 class Line:
@@ -13,5 +14,5 @@ class Line:
         else:
             return str(self.number) + " " + "".join([str(x) for x in self.tokens])
 
-    def parse(self) -> list[Statement]:
-        return []
+    def ast(self) -> list[Statement]:
+        return parse(self.number, self.tokens)

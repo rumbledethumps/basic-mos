@@ -1,3 +1,7 @@
+from lang.tokens import Token, Word, Operator
+from lang.error import Error, ErrorCode
+
+
 class Ident:
     class Base:
         __match_args__ = "text"
@@ -31,14 +35,14 @@ class Variable:
     class Unary(Base):
         __match_args__ = ("col", "ident")
 
-        def __init__(self, col: int, ident: Ident.Base):
+        def __init__(self, col: range, ident: Ident.Base):
             self.col = col
             self.ident = ident
 
     class Array(Base):
         __match_args__ = ("col", "ident", "list_expr")
 
-        def __init__(self, col: int, ident: Ident.Base, list_expr: list):
+        def __init__(self, col: range, ident: Ident.Base, list_expr: list):
             self.col = col
             self.ident = ident
             self.list_expr = list_expr
@@ -66,42 +70,42 @@ class Expression:
     class Single(Base):
         __match_args__ = ("col", "f32")
 
-        def __init__(self, col: int, f32: float):
+        def __init__(self, col: range, f32: float):
             self.col = col
             self.f32 = f32
 
     class Double(Base):
         __match_args__ = ("col", "f64")
 
-        def __init__(self, col: int, f64: float):
+        def __init__(self, col: range, f64: float):
             self.col = col
             self.f64 = f64
 
     class Integer(Base):
         __match_args__ = ("col", "i16")
 
-        def __init__(self, col: int, i16: int):
+        def __init__(self, col: range, i16: int):
             self.col = col
             self.i16 = i16
 
     class String(Base):
         __match_args__ = ("col", "text")
 
-        def __init__(self, col: int, text: str):
+        def __init__(self, col: range, text: str):
             self.col = col
             self.text = text
 
     class _ColExpr(Base):
         __match_args__ = ("col", "expr")
 
-        def __init__(self, col: int, expr):
+        def __init__(self, col: range, expr):
             self.col = col
             self.expr = expr
 
     class _ColExprExpr(Base):
         __match_args__ = ("col", "expr0", "expr1")
 
-        def __init__(self, col: int, expr0, expr1):
+        def __init__(self, col: range, expr0, expr1):
             self.col = col
             self.expr0 = expr0
             self.expr1 = expr1
@@ -208,27 +212,27 @@ class Statement:
     class _Col(Base):
         __match_args__ = "col"
 
-        def __init__(self, col: int):
+        def __init__(self, col: range):
             self.col = col
 
     class _ColListExpr(Base):
         __match_args__ = ("col", "list_expr")
 
-        def __init__(self, col: int, list_expr: list[Expression]):
+        def __init__(self, col: range, list_expr: list[Expression]):
             self.col = col
             self.list_expr = list_expr
 
     class _ColListVar(Base):
         __match_args__ = ("col", "list_var")
 
-        def __init__(self, col: int, list_var: list[Variable]):
+        def __init__(self, col: range, list_var: list[Variable]):
             self.col = col
             self.list_var = list_var
 
     class _ColVarVar(Base):
         __match_args__ = ("col", "var0", "var1")
 
-        def __init__(self, col: int, var0: Variable, var1: Variable):
+        def __init__(self, col: range, var0: Variable, var1: Variable):
             self.col = col
             self.var0 = var0
             self.var1 = var1
@@ -236,14 +240,14 @@ class Statement:
     class _ColExpr(Base):
         __match_args__ = ("col", "expr")
 
-        def __init__(self, col: int, expr: Expression):
+        def __init__(self, col: range, expr: Expression):
             self.col = col
             self.expr = expr
 
     class _ColExprExpr(Base):
         __match_args__ = ("col", "expr0", "expr1")
 
-        def __init__(self, col: int, expr0: Expression, expr1: Expression):
+        def __init__(self, col: range, expr0: Expression, expr1: Expression):
             self.col = col
             self.expr0 = expr0
             self.expr1 = expr1
@@ -251,7 +255,7 @@ class Statement:
     class _ColExprListExpr(Base):
         __match_args__ = ("col", "expr", "list_expr")
 
-        def __init__(self, col: int, expr: Expression, list_expr: list[Expression]):
+        def __init__(self, col: range, expr: Expression, list_expr: list[Expression]):
             self.col = col
             self.expr = expr
             self.list_expr = list_expr
@@ -261,7 +265,7 @@ class Statement:
 
         def __init__(
             self,
-            col: int,
+            col: range,
             var: Variable,
             expr0: Expression,
             expr1: Expression,
@@ -291,7 +295,7 @@ class Statement:
         __match_args__ = ("col", "var", "list_var", "expr")
 
         def __init__(
-            self, col: int, var: Variable, list_var: list[Variable], expr: Expression
+            self, col: range, var: Variable, list_var: list[Variable], expr: Expression
         ):
             self.col = col
             self.var = var
@@ -336,7 +340,7 @@ class Statement:
 
         def __init__(
             self,
-            col: int,
+            col: range,
             expr: Expression,
             list_statement0: list,
             list_statement1: list,
@@ -351,7 +355,7 @@ class Statement:
 
         def __init__(
             self,
-            col: int,
+            col: range,
             expr0: Expression,
             expr1: Expression,
             list_var: list[Variable],
@@ -364,10 +368,41 @@ class Statement:
     class Let(Base):
         __match_args__ = ("col", "var", "expr")
 
-        def __init__(self, col: int, var: Variable, expr: Expression):
+        def __init__(self, col: range, var: Variable, expr: Expression):
             self.col = col
             self.var = var
             self.expr = expr
+
+        def expect(parse, is_shortcut):
+            pk = parse.peek()
+            column = range(*parse.col)
+            match pk:
+                case Token.Ident(Ident.String(s)) if s == "MID$":
+                    parse.next()
+                    parse.expect(Token.LParen)
+                    var = parse.expect_var()
+                    parse.expect(Token.Comma)
+                    pos = parse.expect_expression()
+                    if parse.maybe(Token.Comma):
+                        length = parse.expect_expression()
+                    else:
+                        length = Expression.Integer(parse.col, 32767)
+                    parse.expect(Token.RParen)
+                    parse.expect(Token.Operator(Operator.Equal))
+                    expr = parse.expect_expression()
+                    return Statement.Mid(column, var, pos, length, expr)
+            var = parse.expect_var()
+            match parse.next():
+                case Token.Operator(Operator.Equal):
+                    return Statement.Let(column, var, parse.expect_expression())
+            if is_shortcut:
+                raise Error(ErrorCode.SyntaxError).add_column(column).add_message(
+                    "UNKNOWN STATEMENT"
+                )
+            else:
+                raise Error(ErrorCode.SyntaxError).add_column(parse.col).add_message(
+                    "EXPECTED EQUALS SIGN"
+                )
 
     class List(_ColExprExpr):
         pass
@@ -401,7 +436,7 @@ class Statement:
 
         def __init__(
             self,
-            col: int,
+            col: range,
             expr0: Expression,
             expr1: Expression,
             expr2: Expression,
@@ -514,3 +549,14 @@ class Statement:
                 for var in list_var:
                     var.accept(visitor)
         visitor.visit_statement(self)
+
+    def expect(parse) -> Base:
+        pk = parse.peek()
+        match pk:
+            case Token.Ident(_):
+                return Statement.Let.expect(parse, True)
+            case Token.Word(word):
+                parse.next()
+                match word:
+                    case Word.Clear:
+                        return Statement.Clear.expect(parse)

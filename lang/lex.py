@@ -233,8 +233,10 @@ def lex(source_line: str) -> (int, list[Token]):
     line_number = None
     result = Re.line_number.match(source_line)
     if result:
-        line_number = int(result.group(1))
-        source_line = result.group(2)
+        potential_line_number = int(result.group(1))
+        if potential_line_number >= 0 and potential_line_number <= 32767:
+            line_number = potential_line_number
+            source_line = result.group(2)
     tokens = list(BasicLexer(source_line))
     _trim_end(tokens)
     _collapse_triples(tokens)
