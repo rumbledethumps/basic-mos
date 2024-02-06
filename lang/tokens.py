@@ -72,6 +72,8 @@ class Operator(Enum):
 
 class Literal:
     class Base:
+        __match_args__ = ("text", None)
+
         def __init__(self, text: str):
             self.text = text
 
@@ -175,6 +177,8 @@ class Token:
             return self.text
 
     class Whitespace(Base):
+        __match_args__ = ("length", None)
+
         def __init__(self, length: int):
             self.length = length
 
@@ -190,6 +194,8 @@ class Token:
             return self.length * " "
 
     class Literal(Base):
+        __match_args__ = ("literal", None)
+
         def __init__(self, literal: Literal):
             self.literal = literal
 
@@ -228,6 +234,8 @@ class Token:
             return True
 
     class Word(Base):
+        __match_args__ = ("word", None)
+
         def __init__(self, word: Word):
             self.word = word
 

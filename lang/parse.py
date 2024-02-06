@@ -98,7 +98,7 @@ class BasicParser:
                 raise Error(ErrorCode.SyntaxError).add_column(self.col).add_message(
                     "EXPECTED VARIABLE"
                 )
-        col = range(*self.col)
+        col = range(self.col.start, self.col.stop)
         if ident.is_user_function():
             raise Error(ErrorCode.SyntaxError).add_column(self.col).add_message(
                 "FN RESERVED FOR FUNCTIONS"

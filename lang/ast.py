@@ -1,4 +1,4 @@
-from lang.tokens import Token, Word, Operator
+from lang.tokens import Token, Word, Operator, Literal
 from lang.error import Error, ErrorCode
 
 
@@ -12,20 +12,28 @@ class Ident:
         def __str__(self):
             return self.text
 
+        def __eq__(self, other):
+            return self.text == other.text
+
     class Plain(Base):
-        pass
+        def __repr__(self):
+            return f"Ident.Plain({repr(self.text)})"
 
     class String(Base):
-        pass
+        def __repr__(self):
+            return f"Ident.String({repr(self.text)})"
 
     class Single(Base):
-        pass
+        def __repr__(self):
+            return f"Ident.Single({repr(self.text)})"
 
     class Double(Base):
-        pass
+        def __repr__(self):
+            return f"Ident.Double({repr(self.text)})"
 
     class Integer(Base):
-        pass
+        def __repr__(self):
+            return f"Ident.Integer({repr(self.text)})"
 
 
 class Variable:
@@ -35,12 +43,25 @@ class Variable:
     class Unary(Base):
         __match_args__ = ("col", "ident")
 
+        def __eq__(self, other):
+            if not isinstance(other, type(self)):
+                return False
+            return self.ident == other.ident
+
         def __init__(self, col: range, ident: Ident.Base):
             self.col = col
             self.ident = ident
 
+        def __repr__(self):
+            return f"Variable.Unary({repr(self.col)}, {repr(self.ident)})"
+
     class Array(Base):
         __match_args__ = ("col", "ident", "list_expr")
+
+        def __eq__(self, other):
+            if not isinstance(other, type(self)):
+                return False
+            return self.ident == other.ident and self.list_expr == other.list_expr
 
         def __init__(self, col: range, ident: Ident.Base, list_expr: list):
             self.col = col
@@ -67,12 +88,22 @@ class Expression:
         def __init__(self, var: int):
             self.var = var
 
+        def __eq__(self, other):
+            if not isinstance(other, type(self)):
+                return False
+            return self.var == other.var
+
     class Single(Base):
         __match_args__ = ("col", "f32")
 
         def __init__(self, col: range, f32: float):
             self.col = col
             self.f32 = f32
+
+        def __eq__(self, other):
+            if not isinstance(other, type(self)):
+                return False
+            return self.f32 == other.f32
 
     class Double(Base):
         __match_args__ = ("col", "f64")
@@ -81,6 +112,11 @@ class Expression:
             self.col = col
             self.f64 = f64
 
+        def __eq__(self, other):
+            if not isinstance(other, type(self)):
+                return False
+            return self.f64 == other.f64
+
     class Integer(Base):
         __match_args__ = ("col", "i16")
 
@@ -88,12 +124,25 @@ class Expression:
             self.col = col
             self.i16 = i16
 
+        def __eq__(self, other):
+            if not isinstance(other, type(self)):
+                return False
+            return self.i16 == other.i16
+
+        def __repr__(self):
+            return f"Expression.Integer({repr(self.col)}, {repr(self.i16)})"
+
     class String(Base):
         __match_args__ = ("col", "text")
 
         def __init__(self, col: range, text: str):
             self.col = col
             self.text = text
+
+        def __eq__(self, other):
+            if not isinstance(other, type(self)):
+                return False
+            return self.text == other.text
 
     class _ColExpr(Base):
         __match_args__ = ("col", "expr")
@@ -201,6 +250,102 @@ class Expression:
                 expr0.accept(visitor)
                 expr1.accept(visitor)
         visitor.visit_expression(self)
+
+    def expect(parse, var_map: dict[Ident, Variable]) -> Base:
+        def descend(parse, var_map, precedence):
+            # lhs =
+            match parse.next():
+                case Token.LParen:
+                    expr = descend(parse, var_map, 0)
+                    parse.expect(Token.RParen)
+                    lhs = expr
+                case Token.Ident(tok_ident):
+                    col = range(parse.col.start, parse.col.stop)
+                    match parse.peek():
+                        case Token.LParen:
+                            parse.expect(Token.LParen)
+                            list_expr = list()
+                            if not parse.maybe(Token.RParen):
+                                list_expr = parse.expect_fn_expression_list(var_map)
+                                parse.expect(Token.RParen)
+                            col = range(col.start, parse.col.stop)
+                            lhs = Expression.Variable(
+                                Variable.Array(col, tok_ident, list_expr)
+                            )
+                        case _:
+                            if tok_ident.is_user_function():
+                                raise Error(ErrorCode.SyntaxError).add_column(
+                                    col
+                                ).add_message("FN RESERVED FOR FUNCTIONS")
+                            if tok_ident in var_map:
+                                lhs = Expression.Variable(var_map[tok_ident])
+                            else:
+                                lhs = Expression.Variable(
+                                    Variable.Unary(col, tok_ident)
+                                )
+                case Token.Operator(Operator.Plus):
+                    op_prec = Expression.unary_op_precedence(Operator.Plus)
+                    lhs = descend(parse, var_map, op_prec)
+                case Token.Operator(Operator.Minus):
+                    col = range(parse.col.start, parse.col.stop)
+                    op_prec = Expression.unary_op_precedence(Operator.Minus)
+                    expr = descend(parse, var_map, op_prec)
+                    lhs = Expression.Negation(col, expr)
+                case Token.Operator(Operator.Not):
+                    col = range(parse.col.start, parse.col.stop)
+                    op_prec = Expression.unary_op_precedence(Operator.Not)
+                    expr = descend(parse, var_map, op_prec)
+                    lhs = Expression.Not(col, expr)
+                case Token.Literal(lit):
+                    lhs = Expression.literal(parse.col, lit)
+                case _:
+                    raise Error(ErrorCode.SyntaxError).add_column(
+                        parse.col
+                    ).add_message("EXPECTED EXPRESSION")
+            while True:
+                match parse.peek():
+                    case Token.Operator(op):
+                        op_prec = Expression.binary_op_precedence(op)
+                        if op_prec <= precedence:
+                            break
+                        parse.next()
+                        column = range(parse.col.start, parse.col.stop)
+                        rhs = descend(parse, var_map, op_prec)
+                        lhs = Expression.binary_op(column, op, lhs, rhs)
+                    case _:
+                        break
+            return lhs
+
+        return descend(parse, var_map, 0)
+
+    def literal(col: range, lit) -> Base:
+        # TODO validate parsers
+        def parse_float(s: str):
+            s = s.replace("D", "E")
+            if s[-1] in ["!", "#", "%"]:
+                s = s[:-1]
+            return float(s)
+
+        def parse_radix(s: str, radix: int):
+            return int(s, radix)
+
+        match lit:
+            case Literal.Hex(s):
+                return Expression.Integer(col, parse_radix(s, 16))
+            case Literal.Octal(s):
+                return Expression.Integer(col, parse_radix(s, 8))
+            case Literal.Single(s):
+                return Expression.Single(col, parse_float(s))
+            case Literal.Double(s):
+                return Expression.Double(col, parse_float(s))
+            case Literal.Integer(s):
+                return Expression.Integer(col, parse_radix(s, 10))
+            case Literal.String(s):
+                if len(s) > 255:
+                    raise Error(ErrorCode.StringTooLong).add_column(col).add_message(
+                        "MAXIMUM LITERAL LENGTH IS 255"
+                    )
+                return Expression.String(col, s)
 
 
 class Statement:
@@ -373,9 +518,19 @@ class Statement:
             self.var = var
             self.expr = expr
 
+        def __repr__(self):
+            return (
+                f"Statement.Let({repr(self.col)}, {repr(self.var)}, {repr(self.expr)})"
+            )
+
+        def __eq__(self, other):
+            if not isinstance(other, type(self)):
+                return False
+            return self.var == other.var and self.expr == other.expr
+
         def expect(parse, is_shortcut):
             pk = parse.peek()
-            column = range(*parse.col)
+            column = range(parse.col.start, parse.col.stop)
             match pk:
                 case Token.Ident(Ident.String(s)) if s == "MID$":
                     parse.next()
@@ -595,7 +750,7 @@ class Statement:
                     case Word.Input:
                         return Statement.Input.expect(parse)
                     case Word.Let:
-                        return Statement.Let.expect(parse)
+                        return Statement.Let.expect(parse, False)
                     case Word.List:
                         return Statement.List.expect(parse)
                     case Word.Load:
