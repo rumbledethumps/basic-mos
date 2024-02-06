@@ -1,4 +1,4 @@
-from lang.ast import Statement
+from lang.ast import Statement, Variable, Expression
 from lang.tokens import TokenScan, Token, Literal, Word, Ident, Operator
 from lang.error import Error, ErrorCode
 
@@ -70,6 +70,46 @@ class BasicParser:
                         ).add_message("UNEXPECTED TOKEN")
                     statements.append(Statement.expect(self))
                     expect_colon = True
+
+    def expect_expression(self) -> Expression:
+        return self.expect_fn_expression(dict())
+
+    def expect_expression_list(self) -> list[Expression]:
+        return self.expect_fn_expression_list(dict())
+
+    def expect_fn_expression(self, var_map: dict[Ident, Variable]) -> Expression:
+        return Expression.expect(self, var_map)
+
+    def expect_fn_expression_list(
+        self, var_map: dict[Ident, Variable]
+    ) -> list[Expression]:
+        expressions = list()
+        while True:
+            expressions.append(self.expect_fn_expression(var_map))
+            if self.maybe(Token.Comma):
+                continue
+            return expressions
+
+    def expect_var(self) -> Variable:
+        match self.next():
+            case Token.Ident(ident):
+                ident = ident
+            case _:
+                raise Error(ErrorCode.SyntaxError).add_column(self.col).add_message(
+                    "EXPECTED VARIABLE"
+                )
+        col = range(*self.col)
+        if ident.is_user_function():
+            raise Error(ErrorCode.SyntaxError).add_column(self.col).add_message(
+                "FN RESERVED FOR FUNCTIONS"
+            )
+        match self.peek():
+            case Token.LParen:
+                self.expect(Token.LParen)
+                list_expr = self.expect_expression_list()
+                self.expect(Token.RParen)
+                return Variable.Array(range(col.start, col.stop), ident, list_expr)
+        return Variable.Unary(range(col.start, col.stop), ident)
 
 
 def parse(line_number: int | None, tokens: list[Token]) -> list[Statement]:

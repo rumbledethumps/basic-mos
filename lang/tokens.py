@@ -130,6 +130,9 @@ class Ident:
         def __str__(self):
             return self.text
 
+        def is_user_function(self):
+            return self.text[0:2] == "FN"
+
     class Plain(Base):
         def __repr__(self):
             return f"Ident.Plain({repr(self.text)})"
@@ -329,6 +332,8 @@ class Token:
             return True
 
     class Operator(Base):
+        __match_args__ = ("operator", None)
+
         def __init__(self, operator: Operator):
             self.operator = operator
 
