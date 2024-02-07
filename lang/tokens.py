@@ -132,6 +132,9 @@ class Ident:
         def __str__(self):
             return self.text
 
+        def __hash__(self):
+            return hash(self.text)
+
         def is_user_function(self):
             return self.text[0:2] == "FN"
 

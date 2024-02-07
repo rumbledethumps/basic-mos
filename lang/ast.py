@@ -578,6 +578,39 @@ class Statement:
             self.list_statement0 = list_statement0
             self.list_statement1 = list_statement1
 
+        def __repr__(self):
+            return f"Statement.If({repr(self.col)}, {repr(self.expr)}, {repr(self.list_statement0)}, {repr(self.list_statement1)})"
+
+        def expect(parse):
+            column = range(parse.col.start, parse.col.stop)
+            predicate = parse.expect_expression()
+            if parse.maybe(Token.Word(Word.Goto)):
+                then_stmt = [Statement.Goto(parse.col, parse.expect_line_number())]
+            else:
+                parse.expect(Token.Word(Word.Then))
+                match parse.maybe_line_number():
+                    case None:
+                        then_stmt = parse.expect_statements()
+                    case n:
+                        then_stmt = [
+                            Statement.Goto(
+                                column, Expression.Single(parse.col, float(n))
+                            )
+                        ]
+            if parse.maybe(Token.Word(Word.Else)):
+                match parse.maybe_line_number():
+                    case None:
+                        else_stmt = parse.expect_statements()
+                    case n:
+                        else_stmt = [
+                            Statement.Goto(
+                                column, Expression.Single(parse.col, float(n))
+                            )
+                        ]
+            else:
+                else_stmt = []
+            return Statement.If(column, predicate, then_stmt, else_stmt)
+
     class Input(Base):
         __match_args__ = ("col", "expr0", "expr1", "list_var")
 

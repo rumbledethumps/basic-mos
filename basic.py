@@ -11,9 +11,10 @@ print(line)
 print(line.number, line.tokens)
 print(line.ast())
 
-line = Line(*lex("ifA%> =&hff00go sub 10"))
+line = Line(*lex("ifA%> =&hff00go to 10"))
 print(line)
 print(line.number, line.tokens)
+print(line.ast())
 
 line = Line(*lex("A%=&1234 ' Comment "))
 print(line)
