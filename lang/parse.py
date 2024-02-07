@@ -224,6 +224,105 @@ class BasicParser:
                 break
         return vars
 
+    def expect_line_number_range(self) -> (Expression, Expression):
+        col = range(self.col.start, self.col.stop)
+        match self.maybe_line_number():
+            case None:
+                from_num = 0.0
+                to_num = lang.line.Line.max_number
+                from_expr = Expression.Single(
+                    range(self.col.start, self.col.start), from_num
+                )
+            case num:
+                from_num = num
+                to_num = num
+                from_expr = Expression.Single(self.col, from_num)
+        if self.maybe(Token.Operator(Operator.Minus)):
+            match self.maybe_line_number():
+                case None:
+                    to_num = lang.line.Line.max_number
+                    to_expr = Expression.Single(
+                        range(self.col.start, self.col.start), to_num
+                    )
+                case num:
+                    to_num = num
+                    to_expr = Expression.Single(self.col.start, to_num)
+        else:
+            to_expr = Expression.Single(range(self.col.start, self.col.start), to_num)
+        if from_num > to_num:
+            raise Error(ErrorCode.UndefinedLine).add_column(
+                range(col.start, self.col.stop)
+            ).add_message("INVALID RANGE")
+        return (from_expr, to_expr)
+
+    def expect_var_range(self) -> (Variable, Variable):
+        from_col, from_ident = self.expect_ident()
+        if self.maybe(Token.Operator(Operator.Minus)):
+            to_col, to_ident = self.expect_ident()
+        else:
+            to_col, to_ident = (from_col, from_ident)
+        match from_ident:
+            case Ident.Plain(s) if len(s) == 1:
+                from_char = s
+            case _:
+                raise Error(ErrorCode.SyntaxError).add_column(from_col)
+        match to_ident:
+            case Ident.Plain(s) if len(s) == 1:
+                to_char = s
+            case _:
+                raise Error(ErrorCode.SyntaxError).add_column(to_col)
+        if from_char > to_char:
+            raise Error(ErrorCode.SyntaxError).add_column(
+                range(from_col.start, to_col.stop)
+            ).add_message("INVALID RANGE")
+        from_var = Variable.Unary(from_col, from_ident)
+        to_var = Variable.Unary(to_col, to_ident)
+        return (from_var, to_var)
+
+    def maybe(self, token: Token) -> bool:
+        match self.peek():
+            case None:
+                return False
+            case t:
+                if token == t:
+                    self.next()
+                    return True
+        return False
+
+    def expect(self, token: Token) -> None:
+        match self.next():
+            case t:
+                if t == token:
+                    return
+        match token:
+            case Token.Literal(_):
+                msg = "EXPECTED LITERAL"
+            case Token.Word(Word.Then):
+                msg = "EXPECTED THEN"
+            case Token.Word(Word.To):
+                msg = "EXPECTED TO"
+            case Token.Word(_):
+                msg = "EXPECTED STATEMENT WORD"
+            case Token.Operator(Operator.Equal):
+                msg = "EXPECTED EQUALS SIGN"
+            case Token.Operator(_):
+                msg = "EXPECTED OPERATOR"
+            case Token.Ident(_):
+                msg = "EXPECTED IDENTIFIER"
+            case Token.LParen:
+                msg = "EXPECTED LEFT PARENTHESIS"
+            case Token.RParen:
+                msg = "EXPECTED RIGHT PARENTHESIS"
+            case Token.Comma:
+                msg = "EXPECTED COMMA"
+            case Token.Colon:
+                msg = "EXPECTED COLON"
+            case Token.Semicolon:
+                msg = "EXPECTED SEMICOLON"
+            case _:
+                msg = "EXPECTED THE IMPOSSIBLE"
+        raise Error(ErrorCode.SyntaxError).add_column(self.col).add_message(msg)
+
 
 def parse(line_number: int | None, tokens: list[Token]) -> list[Statement]:
     try:

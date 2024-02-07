@@ -256,8 +256,7 @@ class Expression:
 
     def expect(parse, var_map: dict[Ident, Variable]) -> Base:
         def descend(parse, var_map, precedence):
-            # lhs =
-            match parse.next():
+            match parse.next():  # lhs =
                 case Token.LParen:
                     expr = descend(parse, var_map, 0)
                     parse.expect(Token.RParen)
@@ -320,6 +319,87 @@ class Expression:
             return lhs
 
         return descend(parse, var_map, 0)
+
+    def binary_op(col: range, op: Operator, lhs: Base, rhs: Base) -> Base:
+        match op:
+            case Operator.Caret:
+                return (Expression.Power(col, lhs, rhs),)
+            case Operator.Multiply:
+                return (Expression.Multiply(col, lhs, rhs),)
+            case Operator.Divide:
+                return (Expression.Divide(col, lhs, rhs),)
+            case Operator.DivideInt:
+                return (Expression.DivideInt(col, lhs, rhs),)
+            case Operator.Modulo:
+                return (Expression.Modulo(col, lhs, rhs),)
+            case Operator.Plus:
+                return (Expression.Add(col, lhs, rhs),)
+            case Operator.Minus:
+                return (Expression.Subtract(col, lhs, rhs),)
+            case Operator.Equal:
+                return (Expression.Equal(col, lhs, rhs),)
+            case Operator.NotEqual:
+                return (Expression.NotEqual(col, lhs, rhs),)
+            case Operator.Less:
+                return (Expression.Less(col, lhs, rhs),)
+            case Operator.LessEqual:
+                return (Expression.LessEqual(col, lhs, rhs),)
+            case Operator.Greater:
+                return (Expression.Greater(col, lhs, rhs),)
+            case Operator.GreaterEqual:
+                return (Expression.GreaterEqual(col, lhs, rhs),)
+            case Operator.And:
+                return (Expression.And(col, lhs, rhs),)
+            case Operator.Or:
+                return (Expression.Or(col, lhs, rhs),)
+            case Operator.Xor:
+                return (Expression.Xor(col, lhs, rhs),)
+            case Operator.Imp:
+                return (Expression.Imp(col, lhs, rhs),)
+            case Operator.Eqv:
+                return (Expression.Eqv(col, lhs, rhs),)
+        raise Error(ErrorCode.InternalError).add_column(col)
+
+    def unary_op_precedence(op: Operator) -> int:
+        match op:
+            case Operator.Plus | Operator.Minus:
+                return 12
+            case Operator.Not:
+                return 6
+        return 0
+
+    def binary_op_precedence(op: Operator) -> int:
+        match op:
+            case Operator.Caret:
+                return 13
+            case Operator.Multiply | Operator.Divide:
+                return 11
+            case Operator.DivideInt:
+                return 10
+            case Operator.Modulo:
+                return 9
+            case Operator.Plus | Operator.Minus:
+                return 8
+            case (
+                Operator.Equal
+                | Operator.NotEqual
+                | Operator.Less
+                | Operator.LessEqual
+                | Operator.Greater
+                | Operator.GreaterEqual
+            ):
+                return 7
+            case Operator.And:
+                return 5
+            case Operator.Or:
+                return 4
+            case Operator.Xor:
+                return 3
+            case Operator.Imp:
+                return 2
+            case Operator.Eqv:
+                return 1
+        return 0
 
     def literal(col: range, lit) -> Base:
         # TODO validate parsers
